@@ -57,7 +57,7 @@
       <select id="ctr"></select>
 
       <label for="q">Filtro rápido (opcional)</label>
-      <input id="q" placeholder="Ex: rio 2 bt, glass, multilink, wifi, rs485..." />
+      <input id="q" placeholder="Ex: RIO2B, GLASS, multilink, wifi, rs485..." />
 
       <div class="row">
         <button class="btn" id="clear">Limpar</button>
@@ -99,104 +99,113 @@
     { id:"SV10",  label:"Teclado Seven/10\" (RS485 e Wi-Fi)" }
   ];
 
+  // =========================
+  // Centrais — nomes renomeados (com códigos)
+  // =========================
   const CENTRALS = [
-    "Rio 1",
-    "Rio 2",
-    "Rio 1 Bluetooth",
-    "Rio 2 Bluetooth",
-    "Rio 2 Slim",
-    "Evolut 1",
-    "Evolut 2",
-    "Evolut 1 Bluetooth",
-    "Evolut 2 Bluetooth",
-    "Glass",
+    "Rio 1 Comum (RIO1C) ou (RIO1E)",
+    "Rio 2 Comum (RIO2C)",
+    "Rio 1 Bluetooth (RIO1B)",
+    "Rio 2 Bluetooth (RIO2B)",
+    "Rio 2 Slim (RIO2S)",          // conforme você pediu (mesmo parecendo typo)
+    "Evolut 1 Comum (EVO1C)",
+    "Evolut 2 Comum (EVO2C)",
+    "Evolut 1 Bluetooth (EVO1B) ou (EVO1A)",
+    "Evolut 2 Bluetooth (EVO2B) ou (EVO2A)",
+    "Central Glass (GLASS)",
     "Evolut 3",
     "NetHub + Potência Universal"
   ];
 
+  // Atalhos internos (para evitar repetição nos mapas)
+  const C = {
+    RIO1C: "Rio 1 Comum (RIO1C) ou (RIO1E)",
+    RIO2C: "Rio 2 Comum (RIO2C)",
+    RIO1B: "Rio 1 Bluetooth (RIO1B)",
+    RIO2B: "Rio 2 Bluetooth (RIO2B)",
+    RIO2S: "Rio 2 Slim (RIO2S)",
+    EVO1C: "Evolut 1 Comum (EVO1C)",
+    EVO2C: "Evolut 2 Comum (EVO2C)",
+    EVO1B: "Evolut 1 Bluetooth (EVO1B) ou (EVO1A)",
+    EVO2B: "Evolut 2 Bluetooth (EVO2B) ou (EVO2A)",
+    GLASS: "Central Glass (GLASS)",
+    EVO3:  "Evolut 3",
+    NETH:  "NetHub + Potência Universal"
+  };
+
   // option = { iface, comm, note? }
-  // Regras:
-  // - "Direto" quando não há periférico
-  // - Quando houver mais de uma option (ex MSV), significa "OU" (uma escolha por instalação)
   const COMPAT = {
-    // Retangular
     "RET": {
-      "Rio 1":               [{iface:"Direto",     comm:"RS485"}],
-      "Rio 2":               [{iface:"Direto",     comm:"RS485"}],
-      "Rio 1 Bluetooth":     [{iface:"Direto",     comm:"RS485"}, {iface:"iSound Cube", comm:"RS485 + AUX/Áudio"}],
-      "Rio 2 Bluetooth":     [{iface:"Direto",     comm:"RS485"}, {iface:"iSound Cube", comm:"RS485 + AUX/Áudio"}],
-      "Evolut 1":            [{iface:"Direto",     comm:"RS485"}],
-      "Evolut 2":            [{iface:"Direto",     comm:"RS485"}],
-      "Evolut 1 Bluetooth":  [{iface:"Direto",     comm:"RS485"}, {iface:"iSound Cube", comm:"RS485 + AUX/Áudio"}],
-      "Evolut 2 Bluetooth":  [{iface:"Direto",     comm:"RS485"}, {iface:"iSound Cube", comm:"RS485 + AUX/Áudio"}]
+      [C.RIO1C]: [{iface:"Direto", comm:"RS485"}],
+      [C.RIO2C]: [{iface:"Direto", comm:"RS485"}],
+      [C.RIO1B]: [{iface:"Direto", comm:"RS485"}, {iface:"iSound Cube", comm:"RS485 + AUX/Áudio"}],
+      [C.RIO2B]: [{iface:"Direto", comm:"RS485"}, {iface:"iSound Cube", comm:"RS485 + AUX/Áudio"}],
+      [C.EVO1C]: [{iface:"Direto", comm:"RS485"}],
+      [C.EVO2C]: [{iface:"Direto", comm:"RS485"}],
+      [C.EVO1B]: [{iface:"Direto", comm:"RS485"}, {iface:"iSound Cube", comm:"RS485 + AUX/Áudio"}],
+      [C.EVO2B]: [{iface:"Direto", comm:"RS485"}, {iface:"iSound Cube", comm:"RS485 + AUX/Áudio"}]
     },
 
-    // Glass
     "GLS": {
-      "Glass":               [{iface:"Direto",     comm:"RS485"}]
+      [C.GLASS]: [{iface:"Direto", comm:"RS485"}]
     },
 
-    // Liloo (correção: Liloo com Evolut 3 é direto)
     "LIL": {
-      "Rio 1 Bluetooth":     [{iface:"Bluetooth 485",    comm:"RS485 (Liloo↔BT485) + AUX/Áudio"}],
-      "Rio 2 Bluetooth":     [{iface:"Bluetooth 485",    comm:"RS485 (Liloo↔BT485) + AUX/Áudio"}],
-      "Evolut 1 Bluetooth":  [{iface:"Bluetooth 485",    comm:"RS485 (Liloo↔BT485) + AUX/Áudio"}],
-      "Evolut 2 Bluetooth":  [{iface:"Bluetooth 485",    comm:"RS485 (Liloo↔BT485) + AUX/Áudio"}],
-      "Rio 2 Slim":          [{iface:"Bluetooth 485 SD", comm:"RS485 (Liloo↔BT485SD) + SD/Áudio"}],
-      "Glass":               [{iface:"Bluetooth 485 SD", comm:"RS485 (Liloo↔BT485SD) + SD/Áudio"}],
-      "Evolut 3":            [{iface:"Direto",           comm:"RS485 (direto)"}]
+      [C.RIO1B]: [{iface:"Bluetooth 485",    comm:"RS485 (Liloo↔BT485) + AUX/Áudio"}],
+      [C.RIO2B]: [{iface:"Bluetooth 485",    comm:"RS485 (Liloo↔BT485) + AUX/Áudio"}],
+      [C.EVO1B]: [{iface:"Bluetooth 485",    comm:"RS485 (Liloo↔BT485) + AUX/Áudio"}],
+      [C.EVO2B]: [{iface:"Bluetooth 485",    comm:"RS485 (Liloo↔BT485) + AUX/Áudio"}],
+      [C.RIO2S]: [{iface:"Bluetooth 485 SD", comm:"RS485 (Liloo↔BT485SD) + SD/Áudio"}],
+      [C.GLASS]: [{iface:"Bluetooth 485 SD", comm:"RS485 (Liloo↔BT485SD) + SD/Áudio"}],
+      [C.EVO3]:  [{iface:"Direto",           comm:"RS485 (direto)"}]
     },
 
-    // Mobee Wide (Linux, Ethernet)
     "MW": {
-      "Rio 1 Bluetooth":     [{iface:"Direto", comm:"Ethernet"}],
-      "Rio 2 Bluetooth":     [{iface:"Direto", comm:"Ethernet"}],
-      "Evolut 1 Bluetooth":  [{iface:"Direto", comm:"Ethernet"}],
-      "Evolut 2 Bluetooth":  [{iface:"Direto", comm:"Ethernet"}],
-      "Glass":               [{iface:"Direto", comm:"Ethernet"}]
+      [C.RIO1B]: [{iface:"Direto", comm:"Ethernet"}],
+      [C.RIO2B]: [{iface:"Direto", comm:"Ethernet"}],
+      [C.EVO1B]: [{iface:"Direto", comm:"Ethernet"}],
+      [C.EVO2B]: [{iface:"Direto", comm:"Ethernet"}],
+      [C.GLASS]: [{iface:"Direto", comm:"Ethernet"}]
     },
 
-    // Mobee Slim/Verty (Android, Wi-Fi): OU MiniHub OU Bluetooth 485
     "MSV": {
-      "Rio 1 Bluetooth":     [
-        {iface:"Bluetooth 485", comm:"Wi-Fi (Mobee↔Interface) + RS485 (Interface↔Central)", note:"Escolha 1: Bluetooth 485"},
-        {iface:"MiniHub",      comm:"Wi-Fi (Mobee↔Interface) + RS485 (Interface↔Central)", note:"Escolha 2: MiniHub"}
+      [C.RIO1B]: [
+        {iface:"Bluetooth 485", comm:"Wi-Fi (Mobee↔Interface) + RS485 (Interface↔Central)", note:"OU Bluetooth 485"},
+        {iface:"MiniHub",       comm:"Wi-Fi (Mobee↔Interface) + RS485 (Interface↔Central)", note:"OU MiniHub"}
       ],
-      "Rio 2 Bluetooth":     [
-        {iface:"Bluetooth 485", comm:"Wi-Fi (Mobee↔Interface) + RS485 (Interface↔Central)", note:"Escolha 1: Bluetooth 485"},
-        {iface:"MiniHub",      comm:"Wi-Fi (Mobee↔Interface) + RS485 (Interface↔Central)", note:"Escolha 2: MiniHub"}
+      [C.RIO2B]: [
+        {iface:"Bluetooth 485", comm:"Wi-Fi (Mobee↔Interface) + RS485 (Interface↔Central)", note:"OU Bluetooth 485"},
+        {iface:"MiniHub",       comm:"Wi-Fi (Mobee↔Interface) + RS485 (Interface↔Central)", note:"OU MiniHub"}
       ],
-      "Evolut 1 Bluetooth":  [
-        {iface:"Bluetooth 485", comm:"Wi-Fi (Mobee↔Interface) + RS485 (Interface↔Central)", note:"Escolha 1: Bluetooth 485"},
-        {iface:"MiniHub",      comm:"Wi-Fi (Mobee↔Interface) + RS485 (Interface↔Central)", note:"Escolha 2: MiniHub"}
+      [C.EVO1B]: [
+        {iface:"Bluetooth 485", comm:"Wi-Fi (Mobee↔Interface) + RS485 (Interface↔Central)", note:"OU Bluetooth 485"},
+        {iface:"MiniHub",       comm:"Wi-Fi (Mobee↔Interface) + RS485 (Interface↔Central)", note:"OU MiniHub"}
       ],
-      "Evolut 2 Bluetooth":  [
-        {iface:"Bluetooth 485", comm:"Wi-Fi (Mobee↔Interface) + RS485 (Interface↔Central)", note:"Escolha 1: Bluetooth 485"},
-        {iface:"MiniHub",      comm:"Wi-Fi (Mobee↔Interface) + RS485 (Interface↔Central)", note:"Escolha 2: MiniHub"}
+      [C.EVO2B]: [
+        {iface:"Bluetooth 485", comm:"Wi-Fi (Mobee↔Interface) + RS485 (Interface↔Central)", note:"OU Bluetooth 485"},
+        {iface:"MiniHub",       comm:"Wi-Fi (Mobee↔Interface) + RS485 (Interface↔Central)", note:"OU MiniHub"}
       ],
-      "Glass":               [
-        {iface:"Bluetooth 485", comm:"Wi-Fi (Mobee↔Interface) + RS485 (Interface↔Central)", note:"Escolha 1: Bluetooth 485"},
-        {iface:"MiniHub",      comm:"Wi-Fi (Mobee↔Interface) + RS485 (Interface↔Central)", note:"Escolha 2: MiniHub"}
+      [C.GLASS]: [
+        {iface:"Bluetooth 485", comm:"Wi-Fi (Mobee↔Interface) + RS485 (Interface↔Central)", note:"OU Bluetooth 485"},
+        {iface:"MiniHub",       comm:"Wi-Fi (Mobee↔Interface) + RS485 (Interface↔Central)", note:"OU MiniHub"}
       ]
     },
 
-    // Mobee WideMax/Window (Android, RS485)
     "WMX": {
-      "Rio 1":               [{iface:"MultiLink", comm:"RS485 (via MultiLink)"}],
-      "Rio 2":               [{iface:"MultiLink", comm:"RS485 (via MultiLink)"}],
-      "Rio 1 Bluetooth":     [{iface:"MultiLink", comm:"RS485 (via MultiLink)"}],
-      "Rio 2 Bluetooth":     [{iface:"MultiLink", comm:"RS485 (via MultiLink)"}],
-      "Evolut 1":            [{iface:"MultiLink", comm:"RS485 (via MultiLink)"}],
-      "Evolut 2":            [{iface:"MultiLink", comm:"RS485 (via MultiLink)"}],
-      "Evolut 1 Bluetooth":  [{iface:"MultiLink", comm:"RS485 (via MultiLink)"}],
-      "Evolut 2 Bluetooth":  [{iface:"MultiLink", comm:"RS485 (via MultiLink)"}],
-      "Glass":               [{iface:"MultiLink", comm:"RS485 (via MultiLink)"}],
-      "NetHub + Potência Universal":[{iface:"Direto", comm:"RS485"}]
+      [C.RIO1C]: [{iface:"MultiLink", comm:"RS485 (via MultiLink)"}],
+      [C.RIO2C]: [{iface:"MultiLink", comm:"RS485 (via MultiLink)"}],
+      [C.RIO1B]: [{iface:"MultiLink", comm:"RS485 (via MultiLink)"}],
+      [C.RIO2B]: [{iface:"MultiLink", comm:"RS485 (via MultiLink)"}],
+      [C.EVO1C]: [{iface:"MultiLink", comm:"RS485 (via MultiLink)"}],
+      [C.EVO2C]: [{iface:"MultiLink", comm:"RS485 (via MultiLink)"}],
+      [C.EVO1B]: [{iface:"MultiLink", comm:"RS485 (via MultiLink)"}],
+      [C.EVO2B]: [{iface:"MultiLink", comm:"RS485 (via MultiLink)"}],
+      [C.GLASS]: [{iface:"MultiLink", comm:"RS485 (via MultiLink)"}],
+      [C.NETH]:  [{iface:"Direto",    comm:"RS485"}]
     },
 
-    // Teclado Seven/10" (RS485 e Wi-Fi) — somente Evolut3 direto, sem periférico
     "SV10": {
-      "Evolut 3":            [{iface:"Direto", comm:"RS485 e/ou Wi-Fi (direto, sem periférico)"}]
+      [C.EVO3]:  [{iface:"Direto", comm:"RS485 e/ou Wi-Fi (direto, sem periférico)"}]
     }
   };
 
@@ -250,9 +259,6 @@
     return rows;
   }
 
-  // =========================
-  // Dependent dropdowns
-  // =========================
   function allowedCentralsForKeyboard(kId){
     if(kId === ALL) return new Set(CENTRALS);
     return new Set(Object.keys(COMPAT[kId] || {}));
@@ -300,9 +306,6 @@
     rebuildKeyboardSelect(allowedK, kId);
   }
 
-  // =========================
-  // Render
-  // =========================
   function renderSingle(kObj, c){
     const opts = getOptions(kObj.id,c);
     const ok = !!opts;
@@ -312,7 +315,10 @@
     const rows = ok
       ? opts.map(o => `
           <tr>
-            <td><span class="tag good">${o.iface}</span>${o.note ? `<div class="muted small" style="margin-top:6px;">${o.note} (OU)</div>` : ""}</td>
+            <td>
+              <span class="tag good">${o.iface}</span>
+              ${o.note ? `<div class="muted small" style="margin-top:6px;">${o.note} (escolhe 1)</div>` : ""}
+            </td>
             <td><span class="tag good">${o.comm}</span></td>
           </tr>
         `).join("")
@@ -382,7 +388,6 @@
 
     const kObj = KEYBOARDS.find(x => x.id === kId) || null;
 
-    // Single
     if(kObj && kId !== ALL && c !== ALL){
       const opts = getOptions(kId,c);
       const text = `${kObj.label} ${c} ${(opts||[]).map(o=>`${o.iface} ${o.comm} ${o.note||""}`).join(" ")}`;
@@ -397,7 +402,6 @@
       return;
     }
 
-    // Keyboard fixed
     if(kObj && kId !== ALL && c === ALL){
       const rows = [];
       for(const cc of CENTRALS){
@@ -411,7 +415,6 @@
       return;
     }
 
-    // Central fixed
     if(kId === ALL && c !== ALL){
       const rows = [];
       for(const kk of KEYBOARDS){
@@ -425,14 +428,10 @@
       return;
     }
 
-    // All
     const rows = allPairs().filter(r => matchesFilter(`${r.kLabel} ${r.c} ${r.opts.map(o=>`${o.iface} ${o.comm} ${o.note||""}`).join(" ")}`));
     renderList(rows, "Todas as combinações cadastradas");
   }
 
-  // =========================
-  // Init
-  // =========================
   function init(){
     kbdSel.appendChild(opt(ALL, "(Mostrar todos)"));
     for(const k of KEYBOARDS) kbdSel.appendChild(opt(k.id, k.label));
