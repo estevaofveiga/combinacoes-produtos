@@ -1,1 +1,499 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Compatibilidade Ecxus — Visualizador</title>
+  <style>
+    :root { --bg:#0b0c10; --panel:#12141b; --text:#e9eef5; --muted:#aab3c2; --line:#23283a; --good:#29d38f; --bad:#ff5b6e; }
+    *{ box-sizing:border-box; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    body{ margin:0; background:linear-gradient(180deg,#0b0c10,#0c0f18); color:var(--text); }
+    header{ padding:18px 16px; border-bottom:1px solid var(--line); background:rgba(18,20,27,.8); position:sticky; top:0; backdrop-filter: blur(10px); }
+    h1{ margin:0; font-size:18px; }
+    .sub{ margin-top:6px; color:var(--muted); font-size:13px; line-height:1.35; }
+    main{ max-width:1100px; margin:0 auto; padding:16px; }
+    .grid{ display:grid; grid-template-columns: 1fr; gap:12px; }
+    @media (min-width: 900px){ .grid{ grid-template-columns: 420px 1fr; } }
+    .card{ background:rgba(18,20,27,.9); border:1px solid var(--line); border-radius:14px; padding:14px; box-shadow:0 10px 30px rgba(0,0,0,.25); }
+    label{ display:block; font-size:12px; color:var(--muted); margin:10px 0 6px; }
+    select,input{ width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:#0e1017; color:var(--text); outline:none; }
+    select:focus,input:focus{ border-color:#3a4580; }
+    .row{ display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; }
+    .btn{ cursor:pointer; border:1px solid var(--line); background:#0e1017; color:var(--text); padding:10px 12px; border-radius:10px; font-size:13px; }
+    .btn:hover{ border-color:#3a4580; }
+    .pill{ display:inline-flex; align-items:center; gap:8px; padding:8px 10px; border-radius:999px; border:1px solid var(--line); background:#0e1017; font-size:13px; }
+    .dot{ width:9px; height:9px; border-radius:50%; background:var(--muted); }
+    .dot.good{ background:var(--good); }
+    .dot.bad{ background:var(--bad); }
+    .muted{ color:var(--muted); }
+    table{ width:100%; border-collapse:collapse; margin-top:10px; overflow:hidden; border-radius:12px; border:1px solid var(--line); }
+    th,td{ padding:10px 10px; border-bottom:1px solid var(--line); vertical-align:top; font-size:13px; }
+    th{ text-align:left; color:var(--muted); background:#0e1017; }
+    tr:last-child td{ border-bottom:none; }
+    .iface{ display:flex; flex-wrap:wrap; gap:8px; }
+    .tag{ padding:6px 10px; border-radius:999px; border:1px solid var(--line); background:#0e1017; }
+    .tag.good{ border-color: rgba(41,211,143,.35); }
+    .tag.bad{ border-color: rgba(255,91,110,.35); }
+    .small{ font-size:12px; }
+    .footer-note{ margin-top:10px; color:var(--muted); font-size:12px; line-height:1.35; }
+    code.k{ background:#0e1017; border:1px solid var(--line); padding:2px 6px; border-radius:8px; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Compatibilidade Ecxus — Visualizador</h1>
+  <div class="sub">
+    Selecione <b>Teclado</b> ou <b>Central</b> primeiro. O outro campo vai listar <b>somente opções compatíveis</b>.
+  </div>
+</header>
 
+<main>
+  <div class="grid">
+    <section class="card">
+      <label for="kbd">Teclado</label>
+      <select id="kbd"></select>
+
+      <label for="ctr">Central</label>
+      <select id="ctr"></select>
+
+      <label for="q">Filtro rápido (opcional)</label>
+      <input id="q" placeholder="Ex: rio 2 bt, glass, multilink, wifi, rs485..." />
+
+      <div class="row">
+        <button class="btn" id="clear">Limpar</button>
+        <button class="btn" id="copy">Copiar resultado</button>
+      </div>
+
+      <div class="footer-note">
+        <b>Importante:</b> quando aparecer <code class="k">MiniHub</code> ou <code class="k">Bluetooth 485</code> em uma combinação,
+        significa <b>uma opção OU a outra</b> (instalação escolhe apenas uma).
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="row" style="align-items:center; justify-content:space-between;">
+        <div class="pill"><span class="dot" id="statusDot"></span><span id="statusText">Selecione opções…</span></div>
+        <div class="muted small" id="count"></div>
+      </div>
+
+      <div id="singleView" style="margin-top:12px;"></div>
+      <div id="listView" style="margin-top:12px;"></div>
+    </section>
+  </div>
+</main>
+
+<script>
+(function(){
+  const ALL = "__ALL__";
+
+  // =========================
+  // Teclados (rótulo com observações) + chave interna
+  // =========================
+  const KEYBOARDS = [
+    { id:"RET",   label:"Retangular (RS485)" },
+    { id:"GLS",   label:"Glass (RS485)" },
+    { id:"LIL",   label:"Liloo (RS485)" },
+    { id:"MW",    label:"Mobee Wide (Linux, Ethernet)" },
+    { id:"MSV",   label:"Mobee Slim/Verty (Android, Wi-Fi)" },
+    { id:"WMX",   label:"Mobee WideMax/Window (Android, RS485)" },
+    { id:"SV10",  label:"Teclado Seven/10\" (RS485 e Wi-Fi)" }
+  ];
+
+  const CENTRALS = [
+    "Rio 1",
+    "Rio 2",
+    "Rio 1 Bluetooth",
+    "Rio 2 Bluetooth",
+    "Rio 2 Slim",
+    "Evolut 1",
+    "Evolut 2",
+    "Evolut 1 Bluetooth",
+    "Evolut 2 Bluetooth",
+    "Glass",
+    "Evolut 3",
+    "NetHub + Potência Universal"
+  ];
+
+  // option = { iface, comm, note? }
+  // Regras:
+  // - "Direto" quando não há periférico
+  // - Quando houver mais de uma option (ex MSV), significa "OU" (uma escolha por instalação)
+  const COMPAT = {
+    // Retangular
+    "RET": {
+      "Rio 1":               [{iface:"Direto",     comm:"RS485"}],
+      "Rio 2":               [{iface:"Direto",     comm:"RS485"}],
+      "Rio 1 Bluetooth":     [{iface:"Direto",     comm:"RS485"}, {iface:"iSound Cube", comm:"RS485 + AUX/Áudio"}],
+      "Rio 2 Bluetooth":     [{iface:"Direto",     comm:"RS485"}, {iface:"iSound Cube", comm:"RS485 + AUX/Áudio"}],
+      "Evolut 1":            [{iface:"Direto",     comm:"RS485"}],
+      "Evolut 2":            [{iface:"Direto",     comm:"RS485"}],
+      "Evolut 1 Bluetooth":  [{iface:"Direto",     comm:"RS485"}, {iface:"iSound Cube", comm:"RS485 + AUX/Áudio"}],
+      "Evolut 2 Bluetooth":  [{iface:"Direto",     comm:"RS485"}, {iface:"iSound Cube", comm:"RS485 + AUX/Áudio"}]
+    },
+
+    // Glass
+    "GLS": {
+      "Glass":               [{iface:"Direto",     comm:"RS485"}]
+    },
+
+    // Liloo (correção: Liloo com Evolut 3 é direto)
+    "LIL": {
+      "Rio 1 Bluetooth":     [{iface:"Bluetooth 485",    comm:"RS485 (Liloo↔BT485) + AUX/Áudio"}],
+      "Rio 2 Bluetooth":     [{iface:"Bluetooth 485",    comm:"RS485 (Liloo↔BT485) + AUX/Áudio"}],
+      "Evolut 1 Bluetooth":  [{iface:"Bluetooth 485",    comm:"RS485 (Liloo↔BT485) + AUX/Áudio"}],
+      "Evolut 2 Bluetooth":  [{iface:"Bluetooth 485",    comm:"RS485 (Liloo↔BT485) + AUX/Áudio"}],
+      "Rio 2 Slim":          [{iface:"Bluetooth 485 SD", comm:"RS485 (Liloo↔BT485SD) + SD/Áudio"}],
+      "Glass":               [{iface:"Bluetooth 485 SD", comm:"RS485 (Liloo↔BT485SD) + SD/Áudio"}],
+      "Evolut 3":            [{iface:"Direto",           comm:"RS485 (direto)"}]
+    },
+
+    // Mobee Wide (Linux, Ethernet)
+    "MW": {
+      "Rio 1 Bluetooth":     [{iface:"Direto", comm:"Ethernet"}],
+      "Rio 2 Bluetooth":     [{iface:"Direto", comm:"Ethernet"}],
+      "Evolut 1 Bluetooth":  [{iface:"Direto", comm:"Ethernet"}],
+      "Evolut 2 Bluetooth":  [{iface:"Direto", comm:"Ethernet"}],
+      "Glass":               [{iface:"Direto", comm:"Ethernet"}]
+    },
+
+    // Mobee Slim/Verty (Android, Wi-Fi): OU MiniHub OU Bluetooth 485
+    "MSV": {
+      "Rio 1 Bluetooth":     [
+        {iface:"Bluetooth 485", comm:"Wi-Fi (Mobee↔Interface) + RS485 (Interface↔Central)", note:"Escolha 1: Bluetooth 485"},
+        {iface:"MiniHub",      comm:"Wi-Fi (Mobee↔Interface) + RS485 (Interface↔Central)", note:"Escolha 2: MiniHub"}
+      ],
+      "Rio 2 Bluetooth":     [
+        {iface:"Bluetooth 485", comm:"Wi-Fi (Mobee↔Interface) + RS485 (Interface↔Central)", note:"Escolha 1: Bluetooth 485"},
+        {iface:"MiniHub",      comm:"Wi-Fi (Mobee↔Interface) + RS485 (Interface↔Central)", note:"Escolha 2: MiniHub"}
+      ],
+      "Evolut 1 Bluetooth":  [
+        {iface:"Bluetooth 485", comm:"Wi-Fi (Mobee↔Interface) + RS485 (Interface↔Central)", note:"Escolha 1: Bluetooth 485"},
+        {iface:"MiniHub",      comm:"Wi-Fi (Mobee↔Interface) + RS485 (Interface↔Central)", note:"Escolha 2: MiniHub"}
+      ],
+      "Evolut 2 Bluetooth":  [
+        {iface:"Bluetooth 485", comm:"Wi-Fi (Mobee↔Interface) + RS485 (Interface↔Central)", note:"Escolha 1: Bluetooth 485"},
+        {iface:"MiniHub",      comm:"Wi-Fi (Mobee↔Interface) + RS485 (Interface↔Central)", note:"Escolha 2: MiniHub"}
+      ],
+      "Glass":               [
+        {iface:"Bluetooth 485", comm:"Wi-Fi (Mobee↔Interface) + RS485 (Interface↔Central)", note:"Escolha 1: Bluetooth 485"},
+        {iface:"MiniHub",      comm:"Wi-Fi (Mobee↔Interface) + RS485 (Interface↔Central)", note:"Escolha 2: MiniHub"}
+      ]
+    },
+
+    // Mobee WideMax/Window (Android, RS485)
+    "WMX": {
+      "Rio 1":               [{iface:"MultiLink", comm:"RS485 (via MultiLink)"}],
+      "Rio 2":               [{iface:"MultiLink", comm:"RS485 (via MultiLink)"}],
+      "Rio 1 Bluetooth":     [{iface:"MultiLink", comm:"RS485 (via MultiLink)"}],
+      "Rio 2 Bluetooth":     [{iface:"MultiLink", comm:"RS485 (via MultiLink)"}],
+      "Evolut 1":            [{iface:"MultiLink", comm:"RS485 (via MultiLink)"}],
+      "Evolut 2":            [{iface:"MultiLink", comm:"RS485 (via MultiLink)"}],
+      "Evolut 1 Bluetooth":  [{iface:"MultiLink", comm:"RS485 (via MultiLink)"}],
+      "Evolut 2 Bluetooth":  [{iface:"MultiLink", comm:"RS485 (via MultiLink)"}],
+      "Glass":               [{iface:"MultiLink", comm:"RS485 (via MultiLink)"}],
+      "NetHub + Potência Universal":[{iface:"Direto", comm:"RS485"}]
+    },
+
+    // Teclado Seven/10" (RS485 e Wi-Fi) — somente Evolut3 direto, sem periférico
+    "SV10": {
+      "Evolut 3":            [{iface:"Direto", comm:"RS485 e/ou Wi-Fi (direto, sem periférico)"}]
+    }
+  };
+
+  // =========================
+  // UI elements
+  // =========================
+  const kbdSel = document.getElementById("kbd");
+  const ctrSel = document.getElementById("ctr");
+  const qInp = document.getElementById("q");
+  const singleView = document.getElementById("singleView");
+  const listView = document.getElementById("listView");
+  const statusText = document.getElementById("statusText");
+  const statusDot = document.getElementById("statusDot");
+  const countEl = document.getElementById("count");
+
+  function opt(value, label=value){
+    const o = document.createElement("option");
+    o.value = value;
+    o.textContent = label;
+    return o;
+  }
+
+  function setStatus(ok, text){
+    statusText.textContent = text;
+    statusDot.classList.toggle("good", !!ok);
+    statusDot.classList.toggle("bad", ok === false);
+    if(ok === undefined){
+      statusDot.classList.remove("good","bad");
+    }
+  }
+
+  function normalize(s){ return (s||"").toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu,""); }
+  function matchesFilter(text){
+    const q = normalize(qInp.value.trim());
+    if(!q) return true;
+    return normalize(text).includes(q);
+  }
+
+  function getOptions(kId, c){
+    return (COMPAT[kId] && COMPAT[kId][c]) ? COMPAT[kId][c] : null;
+  }
+
+  function allPairs(){
+    const rows = [];
+    for(const k of KEYBOARDS){
+      for(const c of CENTRALS){
+        const opts = getOptions(k.id,c);
+        if(opts) rows.push({kId:k.id, kLabel:k.label, c, opts});
+      }
+    }
+    return rows;
+  }
+
+  // =========================
+  // Dependent dropdowns
+  // =========================
+  function allowedCentralsForKeyboard(kId){
+    if(kId === ALL) return new Set(CENTRALS);
+    return new Set(Object.keys(COMPAT[kId] || {}));
+  }
+
+  function allowedKeyboardsForCentral(c){
+    if(c === ALL) return new Set(KEYBOARDS.map(x=>x.id));
+    const set = new Set();
+    for(const k of KEYBOARDS){
+      if(getOptions(k.id,c)) set.add(k.id);
+    }
+    return set;
+  }
+
+  function rebuildKeyboardSelect(allowedSet, keepValue){
+    const current = keepValue ?? kbdSel.value;
+    kbdSel.innerHTML = "";
+    kbdSel.appendChild(opt(ALL, "(Mostrar todos)"));
+    for(const k of KEYBOARDS){
+      if(allowedSet.has(k.id)) kbdSel.appendChild(opt(k.id, k.label));
+    }
+    const allowedValues = new Set([ALL, ...allowedSet]);
+    kbdSel.value = allowedValues.has(current) ? current : ALL;
+  }
+
+  function rebuildCentralSelect(allowedSet, keepValue){
+    const current = keepValue ?? ctrSel.value;
+    ctrSel.innerHTML = "";
+    ctrSel.appendChild(opt(ALL, "(Mostrar todos)"));
+    for(const c of CENTRALS){
+      if(allowedSet.has(c)) ctrSel.appendChild(opt(c));
+    }
+    const allowedValues = new Set([ALL, ...allowedSet]);
+    ctrSel.value = allowedValues.has(current) ? current : ALL;
+  }
+
+  function syncDropdowns(){
+    const kId = kbdSel.value;
+    const c   = ctrSel.value;
+
+    const allowedC = allowedCentralsForKeyboard(kId);
+    const allowedK = allowedKeyboardsForCentral(c);
+
+    rebuildCentralSelect(allowedC, c);
+    rebuildKeyboardSelect(allowedK, kId);
+  }
+
+  // =========================
+  // Render
+  // =========================
+  function renderSingle(kObj, c){
+    const opts = getOptions(kObj.id,c);
+    const ok = !!opts;
+    setStatus(ok, ok ? "Compatível" : "Não compatível");
+    countEl.textContent = "";
+
+    const rows = ok
+      ? opts.map(o => `
+          <tr>
+            <td><span class="tag good">${o.iface}</span>${o.note ? `<div class="muted small" style="margin-top:6px;">${o.note} (OU)</div>` : ""}</td>
+            <td><span class="tag good">${o.comm}</span></td>
+          </tr>
+        `).join("")
+      : `<tr><td colspan="2"><span class="tag bad">— Não compatível / não citada</span></td></tr>`;
+
+    singleView.innerHTML = `
+      <table>
+        <tr><th>Teclado</th><td colspan="2">${kObj.label}</td></tr>
+        <tr><th>Central</th><td colspan="2">${c}</td></tr>
+      </table>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Interface / Periférico</th>
+            <th>Comunicação</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+    listView.innerHTML = "";
+  }
+
+  function renderList(rows, title){
+    setStatus(undefined, title);
+    countEl.textContent = `${rows.length} resultado(s)`;
+    singleView.innerHTML = "";
+
+    if(rows.length === 0){
+      listView.innerHTML = `<div class="muted">Nenhuma combinação encontrada.</div>`;
+      return;
+    }
+
+    const body = rows.map(r => {
+      const ifaceTags = r.opts.map(o => `<span class="tag good">${o.iface}</span>`).join("");
+      const commTags  = r.opts.map(o => `<span class="tag good">${o.comm}</span>`).join("");
+      const hasOr = r.opts.length > 1 ? `<div class="muted small" style="margin-top:6px;">Obs: opções são <b>OU</b> (escolhe uma).</div>` : "";
+      return `
+        <tr>
+          <td>${r.kLabel}</td>
+          <td>${r.c}</td>
+          <td><div class="iface">${ifaceTags}</div>${hasOr}</td>
+          <td><div class="iface">${commTags}</div></td>
+        </tr>
+      `;
+    }).join("");
+
+    listView.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Teclado</th>
+            <th>Central</th>
+            <th>Interfaces</th>
+            <th>Comunicação</th>
+          </tr>
+        </thead>
+        <tbody>${body}</tbody>
+      </table>
+    `;
+  }
+
+  function render(){
+    const kId = kbdSel.value;
+    const c   = ctrSel.value;
+
+    const kObj = KEYBOARDS.find(x => x.id === kId) || null;
+
+    // Single
+    if(kObj && kId !== ALL && c !== ALL){
+      const opts = getOptions(kId,c);
+      const text = `${kObj.label} ${c} ${(opts||[]).map(o=>`${o.iface} ${o.comm} ${o.note||""}`).join(" ")}`;
+      if(!matchesFilter(text)){
+        setStatus(undefined, "Filtro ativo — sem resultado");
+        countEl.textContent = "0 resultado(s)";
+        singleView.innerHTML = "";
+        listView.innerHTML = `<div class="muted">Seu filtro removeu o resultado. Limpe o filtro para ver.</div>`;
+        return;
+      }
+      renderSingle(kObj,c);
+      return;
+    }
+
+    // Keyboard fixed
+    if(kObj && kId !== ALL && c === ALL){
+      const rows = [];
+      for(const cc of CENTRALS){
+        const opts = getOptions(kId, cc);
+        if(opts){
+          const text = `${kObj.label} ${cc} ${opts.map(o=>`${o.iface} ${o.comm} ${o.note||""}`).join(" ")}`;
+          if(matchesFilter(text)) rows.push({kId, kLabel:kObj.label, c:cc, opts});
+        }
+      }
+      renderList(rows, `Combinações possíveis para: ${kObj.label}`);
+      return;
+    }
+
+    // Central fixed
+    if(kId === ALL && c !== ALL){
+      const rows = [];
+      for(const kk of KEYBOARDS){
+        const opts = getOptions(kk.id, c);
+        if(opts){
+          const text = `${kk.label} ${c} ${opts.map(o=>`${o.iface} ${o.comm} ${o.note||""}`).join(" ")}`;
+          if(matchesFilter(text)) rows.push({kId:kk.id, kLabel:kk.label, c, opts});
+        }
+      }
+      renderList(rows, `Teclados compatíveis com: ${c}`);
+      return;
+    }
+
+    // All
+    const rows = allPairs().filter(r => matchesFilter(`${r.kLabel} ${r.c} ${r.opts.map(o=>`${o.iface} ${o.comm} ${o.note||""}`).join(" ")}`));
+    renderList(rows, "Todas as combinações cadastradas");
+  }
+
+  // =========================
+  // Init
+  // =========================
+  function init(){
+    kbdSel.appendChild(opt(ALL, "(Mostrar todos)"));
+    for(const k of KEYBOARDS) kbdSel.appendChild(opt(k.id, k.label));
+
+    ctrSel.appendChild(opt(ALL, "(Mostrar todos)"));
+    for(const c of CENTRALS) ctrSel.appendChild(opt(c));
+
+    kbdSel.value = ALL;
+    ctrSel.value = ALL;
+
+    syncDropdowns();
+    render();
+  }
+
+  kbdSel.addEventListener("change", () => { syncDropdowns(); render(); });
+  ctrSel.addEventListener("change", () => { syncDropdowns(); render(); });
+  qInp.addEventListener("input", render);
+
+  document.getElementById("clear").addEventListener("click", () => {
+    qInp.value = "";
+    kbdSel.value = ALL;
+    ctrSel.value = ALL;
+    kbdSel.innerHTML = "";
+    ctrSel.innerHTML = "";
+    init();
+  });
+
+  document.getElementById("copy").addEventListener("click", async () => {
+    const kId = kbdSel.value, c = ctrSel.value;
+    const kObj = KEYBOARDS.find(x => x.id === kId) || null;
+    let text = "";
+
+    if(kObj && kId !== ALL && c !== ALL){
+      const opts = getOptions(kId,c);
+      text = opts
+        ? `Teclado: ${kObj.label}\nCentral: ${c}\nOpções (OU):\n${opts.map(o=>`- ${o.iface} | ${o.comm}${o.note?` | ${o.note}`:""}`).join("\n")}`
+        : `Teclado: ${kObj.label}\nCentral: ${c}\nResultado: NÃO COMPATÍVEL`;
+    } else {
+      const rows = Array.from(listView.querySelectorAll("tbody tr")).map(tr => {
+        const tds = tr.querySelectorAll("td");
+        return `${tds[0].textContent} | ${tds[1].textContent} | IFACE: ${tds[2].textContent.trim().replace(/\s+/g," ")} | COM: ${tds[3].textContent.trim().replace(/\s+/g," ")}`;
+      });
+      text = rows.length ? rows.join("\n") : "Sem resultados.";
+    }
+
+    try{
+      await navigator.clipboard.writeText(text);
+      alert("Resultado copiado.");
+    }catch(e){
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      alert("Resultado copiado (modo compatibilidade).");
+    }
+  });
+
+  init();
+})();
+</script>
+</body>
+</html>
