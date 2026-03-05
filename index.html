@@ -34,6 +34,9 @@
     .tag{ padding:6px 10px; border-radius:999px; border:1px solid var(--line); background:#0e1017; }
     .tag.good{ border-color: rgba(41,211,143,.35); }
     .tag.bad{ border-color: rgba(255,91,110,.35); }
+    a.tag{ color:var(--text); text-decoration:none; }
+    a.tag:hover{ border-color:#3a4580; }
+    a.tag:focus{ outline:2px solid #3a4580; outline-offset:2px; }
     .small{ font-size:12px; }
     .footer-note{ margin-top:10px; color:var(--muted); font-size:12px; line-height:1.35; }
     code.k{ background:#0e1017; border:1px solid var(--line); padding:2px 6px; border-radius:8px; }
@@ -107,7 +110,7 @@
     "Rio 2 Comum (RIO2C)",
     "Rio 1 Bluetooth (RIO1B)",
     "Rio 2 Bluetooth (RIO2B)",
-    "Rio 2 Slim (RIO2S)",          
+    "Rio 2 Slim (RIO2S)",
     "Evolut 1 Comum (EVO1C)",
     "Evolut 2 Comum (EVO2C)",
     "Evolut 1 Bluetooth (EVO1B) ou (EVO1A)",
@@ -210,6 +213,81 @@
   };
 
   // =========================
+  // Manuais (Google Drive)
+  // =========================
+  const M = {
+    EVO3:          { title:"Manual — Evolut 3",                     url:"https://drive.google.com/file/d/1t093gtwKXnYLd4XdnWZlnEduTqfIQyt4/view" },
+    NETH:          { title:"Manual — NetHub",                       url:"https://drive.google.com/file/d/1tDp8iS7u8uh_Ctzk4HiSG51WJsHU15Xs/view" },
+    MINIHUB:       { title:"Manual — MiniHub",                      url:"https://drive.google.com/file/d/1974C_rMXi-FUebloUEbXB6XCiun4aMUy/view" },
+    GLASS1:        { title:"Manual — Central Glass (1)",            url:"https://drive.google.com/file/d/1qhLBH9IxDeGVivi0O-CHAUtEix3AjnVp/view" },
+    GLASS2:        { title:"Manual — Central Glass (2)",            url:"https://drive.google.com/file/d/1gg9P4gPrQ8avXdlniFc7PNhDRi32uHae/view" },
+    MOBEESLIM:     { title:"Manual — Mobee Slim",                   url:"https://drive.google.com/file/d/1Gu_pTmhu54job3UFuZrRCSM2Lcu-Y1sk/view" },
+    MOBEEWIDE:     { title:"Manual — Mobee Wide",                   url:"https://drive.google.com/file/d/1I1ZWF1HW7c0c0W06B1FzTJonpgNqD_Ua/view" },
+    RIO2:          { title:"Manual — iControl Rio 2",               url:"https://drive.google.com/file/d/1gafheKuujK_qnvyB7bpNvtCnoRGafao0/view" },
+    BT485:         { title:"Manual — Bluetooth 485 / 485 SD",       url:"https://drive.google.com/file/d/1w9oDPtYCnedUtwyVWGZWTwGOq2Cd4M9v/view" },
+    ML_WIDEMAX:    { title:"Manual — MultiLink + Wide Max",         url:"https://drive.google.com/file/d/1p4IoQ3dcgwASmYEuqfvlQakNQBSa0arY/view" },
+    ML_VERTYWIN:   { title:"Manual — MultiLink + Verty Window",     url:"https://drive.google.com/file/d/1_jqDjWYe9OkzwthWDsn5mxIQtO06JHrM/view" }
+  };
+
+  function uniquePushByUrl(arr, item){
+    if(!item) return;
+    if(!arr._seen) arr._seen = new Set();
+    if(arr._seen.has(item.url)) return;
+    arr._seen.add(item.url);
+    arr.push(item);
+  }
+
+  function manualsForPair(kId, c, opts){
+    const out = [];
+
+    // Central
+    if(c === C.EVO3) uniquePushByUrl(out, M.EVO3);
+    if(c === C.NETH) uniquePushByUrl(out, M.NETH);
+    if(c === C.GLASS){
+      uniquePushByUrl(out, M.GLASS1);
+      uniquePushByUrl(out, M.GLASS2);
+    }
+
+    // Famílias Rio 2 (RIO2C/RIO2B/RIO2S) -> iControl Rio 2
+    if(/RIO2/i.test(c) || /Rio 2/i.test(c)) uniquePushByUrl(out, M.RIO2);
+
+    // Teclados / equipamentos
+    if(kId === "MSV"){
+      // Mobee Slim/Verty usa MiniHub OU Bluetooth 485
+      uniquePushByUrl(out, M.MINIHUB);
+      uniquePushByUrl(out, M.MOBEESLIM);
+    }
+    if(kId === "MW"){
+      uniquePushByUrl(out, M.MOBEEWIDE);
+    }
+
+    // Periféricos presentes nas opções
+    (opts || []).forEach(o => {
+      const iface = (o.iface || "");
+      if(/minihub/i.test(iface)) uniquePushByUrl(out, M.MINIHUB);
+      if(/bluetooth 485/i.test(iface)) uniquePushByUrl(out, M.BT485);
+
+      // MultiLink + WideMax/Window
+      if(/multilink/i.test(iface) && kId === "WMX"){
+        uniquePushByUrl(out, M.ML_WIDEMAX);
+        uniquePushByUrl(out, M.ML_VERTYWIN);
+      }
+    });
+
+    delete out._seen;
+    return out;
+  }
+
+  function manualsHtml(manuals){
+    if(!manuals || manuals.length === 0){
+      return `<span class="muted small">— Nenhum manual relacionado</span>`;
+    }
+    return manuals
+      .map(m => `<a class="tag good" href="${m.url}" target="_blank" rel="noopener">${m.title}</a>`)
+      .join("");
+  }
+
+  // =========================
   // UI elements
   // =========================
   const kbdSel = document.getElementById("kbd");
@@ -308,6 +386,7 @@
 
   function renderSingle(kObj, c){
     const opts = getOptions(kObj.id,c);
+    const manuals = manualsForPair(kObj.id, c, opts);
     const ok = !!opts;
     setStatus(ok, ok ? "Compatível" : "Não compatível");
     countEl.textContent = "";
@@ -339,6 +418,12 @@
         </thead>
         <tbody>${rows}</tbody>
       </table>
+      
+      <div style="margin-top:12px;">
+        <div class="muted small" style="margin-bottom:6px;">Manuais sugeridos</div>
+        <div class="iface">${manualsHtml(manuals)}</div>
+      </div>
+
     `;
     listView.innerHTML = "";
   }
@@ -356,6 +441,8 @@
     const body = rows.map(r => {
       const ifaceTags = r.opts.map(o => `<span class="tag good">${o.iface}</span>`).join("");
       const commTags  = r.opts.map(o => `<span class="tag good">${o.comm}</span>`).join("");
+      const manuals   = manualsForPair(r.kId, r.c, r.opts);
+      const manualTags = manualsHtml(manuals);
       const hasOr = r.opts.length > 1 ? `<div class="muted small" style="margin-top:6px;">Obs: opções são <b>OU</b> (escolhe uma).</div>` : "";
       return `
         <tr>
@@ -363,6 +450,7 @@
           <td>${r.c}</td>
           <td><div class="iface">${ifaceTags}</div>${hasOr}</td>
           <td><div class="iface">${commTags}</div></td>
+          <td><div class="iface">${manualTags}</div></td>
         </tr>
       `;
     }).join("");
@@ -375,6 +463,7 @@
             <th>Central</th>
             <th>Interfaces</th>
             <th>Comunicação</th>
+            <th>Manuais</th>
           </tr>
         </thead>
         <tbody>${body}</tbody>
@@ -466,13 +555,17 @@
 
     if(kObj && kId !== ALL && c !== ALL){
       const opts = getOptions(kId,c);
+      const manuals = manualsForPair(kId, c, opts || []);
+      const manualsText = manuals.length
+        ? ("\nManuais:\n" + manuals.map(m => `- ${m.title}: ${m.url}`).join("\n"))
+        : "\nManuais:\n- (nenhum manual relacionado)";
       text = opts
-        ? `Teclado: ${kObj.label}\nCentral: ${c}\nOpções (OU):\n${opts.map(o=>`- ${o.iface} | ${o.comm}${o.note?` | ${o.note}`:""}`).join("\n")}`
-        : `Teclado: ${kObj.label}\nCentral: ${c}\nResultado: NÃO COMPATÍVEL`;
+        ? `Teclado: ${kObj.label}\nCentral: ${c}\nOpções (OU):\n${opts.map(o=>`- ${o.iface} | ${o.comm}${o.note?` | ${o.note}`:""}`).join("\n")}${manualsText}`
+        : `Teclado: ${kObj.label}\nCentral: ${c}\nResultado: NÃO COMPATÍVEL${manualsText}`;
     } else {
       const rows = Array.from(listView.querySelectorAll("tbody tr")).map(tr => {
         const tds = tr.querySelectorAll("td");
-        return `${tds[0].textContent} | ${tds[1].textContent} | IFACE: ${tds[2].textContent.trim().replace(/\s+/g," ")} | COM: ${tds[3].textContent.trim().replace(/\s+/g," ")}`;
+        return `${tds[0].textContent} | ${tds[1].textContent} | IFACE: ${tds[2].textContent.trim().replace(/\s+/g," ")} | COM: ${tds[3].textContent.trim().replace(/\s+/g," ")} | MANUAIS: ${tds[4]?.textContent.trim().replace(/\s+/g," ") || "-"}`;
       });
       text = rows.length ? rows.join("\n") : "Sem resultados.";
     }
